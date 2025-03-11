@@ -1,0 +1,1589 @@
+{
+  "name": "Triton Supabase Working Copy",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        1200
+      ],
+      "id": "2a5ab1af-086e-43be-a004-4848c6404b1c",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -140,
+        -680
+      ],
+      "id": "ce6a29eb-cb44-4ffc-9ce7-10d315b7fd2d",
+      "name": "When chat message received",
+      "webhookId": "a813d863-908b-45f9-94eb-a918c07b4749"
+    },
+    {
+      "parameters": {
+        "name": "Documents",
+        "description": "Data to answer based on the stored documents. You should always use this data no matter what the query is.",
+        "topK": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        380,
+        -460
+      ],
+      "id": "246ac3b3-4882-475d-abaa-35aa32373759",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://mraojbhqeymzsvvqulok.supabase.co/rest/v1/documents?id=gt.0",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yYW9qYmhxZXltenN2dnF1bG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjY0OTcsImV4cCI6MjA1NDc0MjQ5N30.ntKurVGioEGgp9dbdbb6e-829cqXkOI6Pa1KU1yFZjk"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -440,
+        760
+      ],
+      "id": "f68801af-becc-4192-8e05-4bbb6fb00104",
+      "name": "Delete node",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7f45737-1d7e-47e4-9e95-069c3f1a8a3d",
+              "leftValue": "={{ $binary.data.mimeType}}",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1740,
+        1420
+      ],
+      "id": "a83bb686-f49a-4818-9019-7d0c8f18c870",
+      "name": "Check if XLSX file"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2620,
+        860
+      ],
+      "id": "f666f603-9db0-4b59-a83f-27c85c1e2fca",
+      "name": "Loop Over XLSX Items"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2200,
+        1400
+      ],
+      "id": "6519b87f-1f8a-4ee8-a91f-859c5066a4ba",
+      "name": "Loop Over Other than XLSX Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        1840
+      ],
+      "id": "3b87397d-a8b1-477d-b89c-c495f9d829d2",
+      "name": "Files Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an intelligent assistant connected to a Supabase vector store database that contains various resource documents. These documents may include stories, financial data, technical information, or general knowledge.\n\nImportant Constraints:\n\nOnly respond with information derived strictly from the Supabase vector store documents.\nDo NOT generate answers based on external knowledge or assumptions.\nIf the information is not available in the Supabase database, respond with:\n\"Sorry, I do not have information on that topic based on the available resources.\"\nFor general greetings or small talk (e.g., \"Hi\", \"Hello\"), normal conversational responses are allowed.\nFor all other queries, ensure responses are exclusively based on the Supabase documents.\nDeep Understanding & Contextual Search:\nFirst, fully understand the user's question and its context.\nThen, perform an in-depth semantic search across the Supabase vector store to find the most relevant information.\nVerify each step of the process before moving to the next. Only after confirming relevant data has been identified should you proceed to generate a response.\nAnswer Generation:\nGenerate precise, clear, and contextually relevant answers strictly from the identified Supabase data.\nCite relevant sections or summaries from the Supabase content where applicable.\nNo Hallucination Policy:\nUnder no circumstances should you provide fabricated, estimated, or unrelated answers.\nDo not provide opinions, external facts, or assumptions outside of what is explicitly available in the Supabase documents.\nStep-by-Step Reasoning:\nFor complex queries, break down the reasoning process, validate each intermediate result, and only then provide the final answer.\nAnd make sure that dont answer from the user chat memory.\n\nAlso make sure if the user asks for a table then follow this default table format when user dont mention anything- Format:- The table must have no breaks, no extra spaces, and should appear exactly like an Excel table, with aligned columns and proper borders. The table should use fixed-width formatting, ensuring numbers and text line up perfectly under each column header."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        140,
+        -680
+      ],
+      "id": "7091480d-c521-46e2-849c-232d191829d6",
+      "name": "AI Agent for QnA from Document"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -20,
+        -420
+      ],
+      "id": "2e47d1d2-4e1f-499e-bb5c-c54bae134054",
+      "name": "OpenAI Chat Model for Tool Calling and QnA",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        180,
+        -420
+      ],
+      "id": "a3fe5814-071a-4e3b-ae79-694be86de3d1",
+      "name": "Postgres Chat History Memory",
+      "credentials": {
+        "postgres": {
+          "id": "Qhq75MQSRUm9GgHX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        -220
+      ],
+      "id": "7b21627f-1363-4c11-bc2a-51dd5db380e0",
+      "name": "Documents Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        680,
+        -240
+      ],
+      "id": "2874845a-6205-4d99-bd59-cd4b3437abb5",
+      "name": "OpenAI Chat Model for Documents retrieval",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        360,
+        -60
+      ],
+      "id": "7fd62067-c4f1-4941-9779-72f45590849e",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-thinking-exp",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        940,
+        -240
+      ],
+      "id": "aa0c91c4-004d-49c1-a71a-cff0e97d730d",
+      "name": "Google Gemini Chat Model for Documents Retrieval",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -300,
+        -420
+      ],
+      "id": "c4189e03-b623-414f-8967-9466b3f8b3c2",
+      "name": "Google Gemini Chat Model for QnA and Tool Calling",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2900,
+        860
+      ],
+      "id": "403caf0a-53df-4443-b939-dc7426c84b04",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        3320,
+        1100
+      ],
+      "id": "380f542c-35c8-4d14-ac34-350ca7a6723c",
+      "name": "XLSX Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        3140,
+        860
+      ],
+      "id": "835c3797-042e-4b3e-84a4-ee73face5cb9",
+      "name": "Enter XLSXs to Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3160,
+        1100
+      ],
+      "id": "9bb8a40d-7437-4139-a31d-14973a1661bf",
+      "name": "XLSX files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        3360,
+        1260
+      ],
+      "id": "209f7de5-ef20-4b0b-8c09-42229d18c1d0",
+      "name": "XLSX Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "url": "https://www.zohoapis.in/workdrive/api/v1/teamfolders/ajkt2a7adb5ddbbba4f93ab05365d99eb9e1e/files",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        140,
+        880
+      ],
+      "id": "b87b6010-6d7c-4414-8c26-69252d1d333d",
+      "name": "List all Zoho file details",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the full response from Zoho WorkDrive API node\nconst rawDataNode = $node[\"List all Zoho file details\"].json;\n\n// Debugging: Log the raw response from Zoho WorkDrive API\nconsole.log(\"📌 Raw Zoho API Response:\", rawDataNode);\n\n// Ensure rawDataNode exists\nif (!rawDataNode || !rawDataNode.data) {\n    throw new Error(\"❌ Zoho WorkDrive API response is empty or missing.\");\n}\n\n// Identify where 'data' is located in the API response\nlet rawData;\nif (Array.isArray(rawDataNode.data) && rawDataNode.data.length > 0) {\n    rawData = rawDataNode.data[0]?.data; // First element in the array\n} else if (typeof rawDataNode.data === \"string\") {\n    rawData = rawDataNode.data; // If 'data' is a string\n} else {\n    throw new Error(\"❌ Zoho WorkDrive API 'data' field is missing or undefined.\");\n}\n\n// Debugging: Log extracted rawData\nconsole.log(\"📌 Extracted rawData:\", rawData);\n\n// Check if rawData is a string and parse it\nlet parsedData;\nif (typeof rawData === \"string\") {\n    try {\n        parsedData = JSON.parse(rawData);\n    } catch (error) {\n        throw new Error(\"❌ Error parsing Zoho API response: \" + error.message);\n    }\n} else {\n    parsedData = rawData;\n}\n\n// Debugging: Log parsed data\nconsole.log(\"📌 Parsed Data:\", parsedData);\n\n// Extract the file list safely\nconst zohoFiles = parsedData?.data || [];\n\n// *Ensure zohoFiles is an array*\nif (!Array.isArray(zohoFiles)) {\n    throw new Error(\"❌ Expected an array of files but received: \" + JSON.stringify(zohoFiles));\n}\n\n// Debugging: Log final extracted file list\nconsole.log(\"📌 Zoho Files List:\", zohoFiles);\n\n// Convert the Zoho file objects into a proper JSON format\nconst formattedFiles = zohoFiles.map(file => ({\n    id: file.id,\n    name: file.attributes?.name || \"Unknown\",\n    lastModifiedTime: file.attributes?.modified_time || null,\n    download_url: file.attributes?.download_url || \"\",\n    modifiedBy: file.attributes?.modified_by || \"Unknown\"\n}));\n\n// Debugging: Log formatted files before returning\nconsole.log(\"📌 Formatted Files:\", formattedFiles);\n\n// Return the properly formatted array of file objects\nreturn formattedFiles;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        880
+      ],
+      "id": "0528094d-cc0b-4557-b7be-99860f9d2851",
+      "name": "Parse JSON in proper format",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "wms-tkp-token=60037695728-c9c4fce6-fa9f09462b36c647786ded70cd98ead1; CT_CSRF_TOKEN=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_9ca8afda3c=67cedda465839ebb400f534ce758c510; zpcc=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_13e18a66b2=3ef4df315380ed89ad7f51333f5a80eb; _zcsr_tmp=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; _iambdt=debda297dde58d58f0fce91527ef9f5e802a8be7d46ea08b382f374eb07482013adc2189b9ba4d3bdb3e41d90af67a914bdc3988df73cfadafc42dc016216b59; _iamadt=9a436cf2b24a4f0c414bfdafa4f335b7a4a2bc91ec22de37626ab4c4e0cc766d31cb3fba099d1fd4e0206ccbdcc90a56"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+          ]
+        },
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1
+            }
+          },
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        520
+      ],
+      "id": "aad02d9f-507f-4f94-bcfa-d0e9c50109bb",
+      "name": "Download All Files",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f239ca10-0841-404a-8cae-8fcd5005d3f9",
+              "name": "file_id",
+              "value": "={{ $('Parse JSON in proper format').first().json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        520
+      ],
+      "id": "165c35e2-929e-475c-94ab-bdd881d4779e",
+      "name": "Edit Fields to match Supabase table",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "tableId": "documents",
+        "dataToSend": "autoMapInputData"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        600,
+        460
+      ],
+      "id": "45342ac2-4d0c-4721-8edf-cda0280446ae",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        340
+      ],
+      "id": "a688810a-8cec-4d5e-98b6-ccc2d54dea98",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1700,
+        560
+      ],
+      "id": "316addb5-dcb2-48d0-9f65-ef406bf5adea",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1860,
+        520
+      ],
+      "id": "e649af85-3188-41ae-bb09-e91b7c297f6a",
+      "name": "Default Data Loader1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        700
+      ],
+      "id": "19d6393b-5fa8-49df-b27e-39ce7925c05d",
+      "name": "Recursive Character Text Splitter1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        2740,
+        1420
+      ],
+      "id": "fad83d23-76ab-49e6-916c-b499d547b40c",
+      "name": "Enter non XLSX files to Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2720,
+        1640
+      ],
+      "id": "dc3cd822-1de6-45bd-bacc-893c6b19fcf1",
+      "name": "Files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        1660
+      ],
+      "id": "f4794620-41fa-4a69-95e0-e614147e28a3",
+      "name": "Files Data Loader"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dedf0f50-d25c-4cf1-9e10-a848ab7f7143",
+              "leftValue": "={{ $json.download_url }}",
+              "rightValue": "accl",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        880
+      ],
+      "id": "5e376c39-75f2-4e31-b9e6-f4964cd3fcdd",
+      "name": "filter only files with correct link",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "=https://www.zohoapis.in/workdrive/api/v1/teamfolders/{{ $json.id }}/files",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $('Zoho access token refresher (alternative)').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        880
+      ],
+      "id": "1ff65894-534e-4a33-831f-a704a27d4e4d",
+      "name": "List all Zoho files in subfolder",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the full response from Zoho WorkDrive API node\nconst rawDataNode = $node[\"List all Zoho files\"].json;\n\n// Debugging: Log the raw response from Zoho WorkDrive API\nconsole.log(\"📌 Raw Zoho API Response:\", rawDataNode);\n\n// Ensure rawDataNode exists\nif (!rawDataNode || !rawDataNode.data) {\n    throw new Error(\"❌ Zoho WorkDrive API response is empty or missing.\");\n}\n\n// Extract 'data' from API response\nlet rawData = rawDataNode.data;\n\n// Convert `data` field into a proper array if necessary\nif (typeof rawData === \"string\") {\n    try {\n        rawData = JSON.parse(rawData); // Parse JSON string if needed\n    } catch (error) {\n        throw new Error(\"❌ Error parsing Zoho API response: \" + error.message);\n    }\n} else if (Array.isArray(rawData) && rawData.length > 0) {\n    rawData = rawData[0]?.data; // Extract the first item if it's an array\n}\n\n// Debugging: Log extracted rawData\nconsole.log(\"📌 Extracted rawData:\", rawData);\n\n// Ensure rawData contains an array of files\nconst zohoFiles = rawData?.data || [];\n\n// Check if zohoFiles is an array\nif (!Array.isArray(zohoFiles)) {\n    throw new Error(\"❌ Expected an array of files but received: \" + JSON.stringify(zohoFiles));\n}\n\n// Debugging: Log the extracted file list\nconsole.log(\"📌 Zoho Files List:\", zohoFiles);\n\n// Format the extracted files for output\nconst formattedFiles = zohoFiles\n    .filter(file => file.type === \"files\") // Exclude folders\n    .map(file => ({\n        json: {\n            id: file.id,\n            name: file.attributes?.name || \"Unknown\",\n            lastModifiedTime: file.attributes?.modified_time || null,\n            download_url: file.attributes?.download_url || \"\",\n            modifiedBy: file.attributes?.modified_by || \"Unknown\"\n        }\n    }));\n\n// Debugging: Log formatted files before returning\nconsole.log(\"📌 Formatted Zoho Files:\", formattedFiles);\n\n// Return the extracted and formatted Zoho files\nreturn formattedFiles.length > 0 ? formattedFiles : [{ json: { message: \"No files found.\" } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1080,
+        880
+      ],
+      "id": "93710891-d9aa-4c6b-b266-accd22c6f0f8",
+      "name": "JSON parsing of Zoho Metadata2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "dedf0f50-d25c-4cf1-9e10-a848ab7f7143",
+              "leftValue": "={{ $json.download_url }}",
+              "rightValue": "accl",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        880
+      ],
+      "id": "4ff92bb1-616c-4668-aab7-9bd7743a8407",
+      "name": "filter only files with correct link1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://zoho-access-token-refresher-api.onrender.com/refresh-token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "1000.F0ZVRFPFZLBJ5F4OUYNT16XZXSB8RS"
+            },
+            {
+              "name": "client_secret",
+              "value": "574f4ca5a62c1353e5196d5029c2c172a312f73495"
+            },
+            {
+              "name": "token",
+              "value": "1000.031da72bed142c36290069922c366d66.58a466ced05515832870434108b208df"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        760
+      ],
+      "id": "17f30281-ec30-434c-8c2e-af6f5a082228",
+      "name": "Access_token-refresher",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.zohoapis.in/workdrive/api/v1/multizip",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"data\": {\n    \"attributes\": {\n      \"resource_id\": \"ajkt2a7adb5ddbbba4f93ab05365d99eb9e1e\"\n    },\n    \"type\": \"files\"\n  }\n}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3000
+            }
+          },
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -100,
+        1420
+      ],
+      "id": "4129705e-3704-4443-878a-b6218d9ee91b",
+      "name": "Zip All files from a pre-selected Zoho Workdrive Folder",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "maxTries": 3,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 55
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -920,
+        1420
+      ],
+      "id": "5b636c2f-323b-4055-8633-78c469c6cedf",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "wms-tkp-token=60038158413-302e00b8-6697c94684f99975f6352e60006d3e2a; _zcsr_tmp=73fb7dddd4eba5d8cb43d0c2a2dcae0f1490ce2ed2f66802ca399fce7da78a03dc73dd18d38a4f35ccd6fbb0118f17baa41acf3f9d78c30bbe9cb85174b559e7; IAMSATCK_60038158413=eyJraWQiOiJhY2NvdW50cy5lYXIuc2VjcmV0LmxhYmVsIiwiZW5jIjoiQTI1NkNCQyIsImFsZyI6ImRpciJ9...OWM3MGNjMzQxZjlhZTI2YzM2ZTYxNTQxNDJlYjk1MzZjYzhiYTdlMGRmOTVlYzY3MjFjN2RjZjk2YmRlYWQ1ZWFmNzE0MWM4NDA4MjczZmEwNWZkMDI0NGEzZDAyYjE1MWY5YTYyZmZjNmI5NDIzYzEwN2FmMDJkYzQ2OTU0ZTNkNTEzNGRhYjliYmQ4MTEwNWVmMTEwZjE1M2NmODRmZg.; _iamadt=e0cce222ecf2f87db5a367666edf1eac6407a15d4f22ad1113137f2f7bd56d63ff27ac1f8bf8dc447b7b0715ac5f338a; _iambdt=d5cb83a30699c717b12d4da90768c64875ee00064ee2632f88b5383caf78a8a20388b72bd9eb3bafbc976f6c52ecd50ade34c8768bdb4e6ea1714de22cc04acb; iamcsr=73fb7dddd4eba5d8cb43d0c2a2dcae0f1490ce2ed2f66802ca399fce7da78a03dc73dd18d38a4f35ccd6fbb0118f17baa41acf3f9d78c30bbe9cb85174b559e7; _z_identity=true; zalb_6e73717622=dea4bb29906843a6fbdf3bd5c0e43d1d; stk=334d68a2f9da019de944b30c3dad888b; JSESSIONID=FC25D884F59207CCDB9BCD8236E1EA25"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        1420
+      ],
+      "id": "4cd4bf2f-4be1-419a-ad1d-93d3fdcfbb89",
+      "name": "Download Zip of All Files",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Process all binary files and output them as individual items\nreturn $input.all().flatMap(item =>\n  Object.keys(item.binary || {}).map(key => ({\n    binary: {\n      data: item.binary[key] // Assign the binary file data\n    },\n    json: {\n      fileName: item.binary[key].fileName || 'unknown',          // 📁 File Name\n      mimeType: item.binary[key].mimeType || 'unknown',          // 🏷️ Mime Type\n      fileExtension: item.binary[key].fileExtension || 'unknown',// 📂 File Extension\n      directory: item.binary[key].directory || 'root'            // 📁 Directory Info\n    }\n  }))\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1420
+      ],
+      "id": "a80c1fd9-b72b-45ed-8c9d-0a9ef3d27190",
+      "name": "Split into multiple file items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b4eae290-6e26-4796-982c-4d960b3394a7",
+              "leftValue": "={{ $binary.data.fileSize }}",
+              "rightValue": "0 B",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1380,
+        1420
+      ],
+      "id": "9823e2ea-680d-4f71-9faf-e14bc9f0ea7b",
+      "name": "Check if file empty"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        740,
+        1420
+      ],
+      "id": "969b0e5f-8276-4e3d-9124-999b69592cf6",
+      "name": "Unzip into 1 item containing all files",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1781345c-6646-48fc-a4e5-0eaa1c5f5bb9",
+              "name": "access_token",
+              "value": "={{ $json.access_token }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -380,
+        1420
+      ],
+      "id": "5f743fba-9596-4638-b9c7-7d82c6420b0c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.zohoapis.in/workdrive/downloadprogress?progressid=60038158413_{{ $json.wmsKey }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $('Edit Fields').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        180,
+        1420
+      ],
+      "id": "1b32769c-20c9-456f-8f27-8db4a81222c1",
+      "name": "Get download link",
+      "alwaysOutputData": false,
+      "retryOnFail": false,
+      "maxTries": 3,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://accounts.zoho.in/oauth/v2/token",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "refresh_token",
+              "value": "1000.91f8a3b6583cea7ed462c1fc103c0c01.afc402f4b8ed81f6e44799185abff85a"
+            },
+            {
+              "name": "client_id",
+              "value": "1000.RQD51N4WUGBXXRD4M567H334TX41RX"
+            },
+            {
+              "name": "client_secret",
+              "value": "acb2062284bdf0e984ff09b59bd9935b96b3858f9f"
+            },
+            {
+              "name": "grant_type",
+              "value": "refresh_token"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        1420
+      ],
+      "id": "df087889-1fe5-4991-9b36-9ef94cbec3c2",
+      "name": "Zoho access token refresher (alternative)"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "wms-tkp-token=60037695728-c9c4fce6-fa9f09462b36c647786ded70cd98ead1; CT_CSRF_TOKEN=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_9ca8afda3c=67cedda465839ebb400f534ce758c510; zpcc=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_13e18a66b2=3ef4df315380ed89ad7f51333f5a80eb; _zcsr_tmp=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; _iambdt=debda297dde58d58f0fce91527ef9f5e802a8be7d46ea08b382f374eb07482013adc2189b9ba4d3bdb3e41d90af67a914bdc3988df73cfadafc42dc016216b59; _iamadt=9a436cf2b24a4f0c414bfdafa4f335b7a4a2bc91ec22de37626ab4c4e0cc766d31cb3fba099d1fd4e0206ccbdcc90a56"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "*/*"
+            },
+            {
+              "name": "Referer",
+              "value": "https://workdrive.zoho.in/"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $('Zoho access token refresher (alternative)').item.json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        680
+      ],
+      "id": "a53c294d-27df-476a-8828-179dd63d82a5",
+      "name": "Download All Files2",
+      "alwaysOutputData": true,
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete node": {
+      "main": [
+        []
+      ]
+    },
+    "Check if XLSX file": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Other than XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Files Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for Tool Calling and QnA": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat History Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documents Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for Documents retrieval": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Documents Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model for Documents Retrieval": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model for QnA and Tool Calling": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter XLSXs to Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "XLSX Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List all Zoho file details": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON in proper format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON in proper format": {
+      "main": [
+        [
+          {
+            "node": "filter only files with correct link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download All Files": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields to match Supabase table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields to match Supabase table": {
+      "main": [
+        []
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter non XLSX files to Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter only files with correct link": {
+      "main": [
+        [
+          {
+            "node": "Download All Files2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "List all Zoho files in subfolder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List all Zoho files in subfolder": {
+      "main": [
+        [
+          {
+            "node": "JSON parsing of Zoho Metadata2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON parsing of Zoho Metadata2": {
+      "main": [
+        [
+          {
+            "node": "filter only files with correct link1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter only files with correct link1": {
+      "main": [
+        []
+      ]
+    },
+    "Zip All files from a pre-selected Zoho Workdrive Folder": {
+      "main": [
+        [
+          {
+            "node": "Get download link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Zoho access token refresher (alternative)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Zip of All Files": {
+      "main": [
+        [
+          {
+            "node": "Unzip into 1 item containing all files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into multiple file items": {
+      "main": [
+        [
+          {
+            "node": "Check if file empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unzip into 1 item containing all files": {
+      "main": [
+        [
+          {
+            "node": "Split into multiple file items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Zip All files from a pre-selected Zoho Workdrive Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if file empty": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check if XLSX file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get download link": {
+      "main": [
+        [
+          {
+            "node": "Download Zip of All Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho access token refresher (alternative)": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f0f387d6-f0e8-430e-945d-2ccf7fb75cb4",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54909ce6602dce9d23999709e4b5488686a5e85a8aa5362e32121a16e4d370b0"
+  },
+  "id": "87W9jIQt9PIr1gbc",
+  "tags": []
+}

@@ -1,0 +1,1039 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3260441f-e8c1-4515-b091-5358a139612c",
+      "name": "When chat message received",
+      "webhookId": "f62adecb-1516-4739-bee3-7e63926a8f9d"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a helpful personal assistant who helps to answer questions from a company documents about marketing campaigns."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        220,
+        0
+      ],
+      "id": "bc4b13aa-1dbf-4d9d-a922-7f5852ee0e92",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        260
+      ],
+      "id": "a100b32b-cd63-4e5d-821c-6035aac2562d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "828ccULkcpVR0yKb",
+          "name": "doc_assistant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        280,
+        260
+      ],
+      "id": "802be9b3-5a43-4cc2-b55a-83873f06012a",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "LBvcw5mniE9DMNTS",
+          "name": "connection_with_superbase"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "company_docs",
+        "description": "Contains company documents about the latest marketing campaigns.",
+        "topK": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -40
+      ],
+      "id": "1ec6e421-314b-453c-97d5-6b13b3971814",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        120
+      ],
+      "id": "ea20c30e-d7e4-4d21-bd75-d7c6d151972b",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "828ccULkcpVR0yKb",
+          "name": "doc_assistant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "rpc/match_documents",
+          "mode": "list",
+          "cachedResultName": "rpc/match_documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        740,
+        140
+      ],
+      "id": "2d5fae8e-7a83-400e-8ea6-1a4163a0075f",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "pF7v7sxCKLJRH3os",
+          "name": "for_storing"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        840,
+        280
+      ],
+      "id": "e002a826-a20d-4fac-8e78-467f03e16a76",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "828ccULkcpVR0yKb",
+          "name": "doc_assistant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1W63b7nxlCjQqugwI282YLIIBJN35q9AT",
+          "mode": "list",
+          "cachedResultName": "analysis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1W63b7nxlCjQqugwI282YLIIBJN35q9AT"
+        },
+        "event": "fileUpdated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        560
+      ],
+      "id": "0916ce47-8dc5-474e-a264-4e017cc42266",
+      "name": "Google Drive Updated",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "I0jc59Ojw1Kq4Enj",
+          "name": "Google Drive Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1W63b7nxlCjQqugwI282YLIIBJN35q9AT",
+          "mode": "list",
+          "cachedResultName": "analysis",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1W63b7nxlCjQqugwI282YLIIBJN35q9AT"
+        },
+        "event": "fileCreated",
+        "options": {
+          "fileType": "all"
+        }
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        860
+      ],
+      "id": "d38f2789-87ce-46b5-97e9-534be001a337",
+      "name": "Google Drive Created",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "I0jc59Ojw1Kq4Enj",
+          "name": "Google Drive Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "bab8b904-6d56-47a7-ac82-f5f11883a8e8",
+              "name": "file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        700
+      ],
+      "id": "059cc03c-04b1-40ef-88a0-230ad1df2106",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=like.*{{ $json.file_id }}*"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        700
+      ],
+      "id": "20863277-1451-4f0a-84bd-9e9e28ecccdd",
+      "name": "Supabase",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "mW82rDFEm1MneRBC",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Edit Fields').item.json.file_id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        500,
+        700
+      ],
+      "id": "40d9873e-289b-4ec1-921d-e365ea6504b6",
+      "name": "Google Drive",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "I0jc59Ojw1Kq4Enj",
+          "name": "Google Drive Credentials"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        720,
+        700
+      ],
+      "id": "01ec20b3-1de4-4a4b-ba51-1088283c3a33",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        940,
+        700
+      ],
+      "id": "ca6b3ab0-7624-4d16-8d16-a06d9300cb1e",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "mW82rDFEm1MneRBC",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        920,
+        940
+      ],
+      "id": "ec1456f4-d172-494e-8d63-e64e6caa1b48",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "828ccULkcpVR0yKb",
+          "name": "doc_assistant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_id",
+                "value": "={{ $('Edit Fields').item.json.file_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1080,
+        920
+      ],
+      "id": "2543b6e5-6e37-478d-bf70-534e625db553",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        1140
+      ],
+      "id": "8e36a421-1b84-4ace-86fc-874600177cc9",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "url": "https://zoho-access-token-refresher-api.onrender.com/refresh-token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "1000.F0ZVRFPFZLBJ5F4OUYNT16XZXSB8RS"
+            },
+            {
+              "name": "client_secret",
+              "value": "574f4ca5a62c1353e5196d5029c2c172a312f73495"
+            },
+            {
+              "name": "token",
+              "value": "1000.031da72bed142c36290069922c366d66.58a466ced05515832870434108b208df"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -460,
+        1680
+      ],
+      "id": "5cc07099-8d88-4e6c-83ca-103951346f78",
+      "name": "Access_token_refresher",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 55
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -680,
+        1680
+      ],
+      "id": "7c59f16b-33d9-4db4-92fb-11e68def8182",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.zohoapis.in/workdrive/api/v1/teamfolders/57zds81a85fc7ca2545949256c24b50202a6a/files",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page[limit]",
+              "value": "50"
+            },
+            {
+              "name": "page[offset]",
+              "value": "0"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        1880
+      ],
+      "id": "9e5a7a50-57b8-4d95-b72d-24def04e8443",
+      "name": "Zoho WorkDrive Folder Info",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.zohoapis.in/workdrive/api/v1/multizip",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"data\": {\n    \"attributes\": {\n      \"resource_id\": \"57zds81a85fc7ca2545949256c24b50202a6a\"\n    },\n    \"type\": \"files\"\n  }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        1460
+      ],
+      "id": "462c4be1-36d5-493d-a2a0-cfc684573f09",
+      "name": "Zoho WorkDrive Folder ZIP",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.download_link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "wms-tkp-token=60037695728-c9c4fce6-fa9f09462b36c647786ded70cd98ead1; CT_CSRF_TOKEN=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_9ca8afda3c=67cedda465839ebb400f534ce758c510; zpcc=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_13e18a66b2=3ef4df315380ed89ad7f51333f5a80eb; _zcsr_tmp=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; _iambdt=debda297dde58d58f0fce91527ef9f5e802a8be7d46ea08b382f374eb07482013adc2189b9ba4d3bdb3e41d90af67a914bdc3988df73cfadafc42dc016216b59; _iamadt=9a436cf2b24a4f0c414bfdafa4f335b7a4a2bc91ec22de37626ab4c4e0cc766d31cb3fba099d1fd4e0206ccbdcc90a56"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        1460
+      ],
+      "id": "c5d4ea05-f7f0-4277-b7a7-6c248bb8f5f5",
+      "name": "Download Zip"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        1460
+      ],
+      "id": "35e2a9cb-d1a8-44d0-8469-203b9e569dc4",
+      "name": "Compression"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        740,
+        1460
+      ],
+      "id": "70849b56-6956-41dc-91ee-413032dedfb9",
+      "name": "Supabase Vector Store2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "mW82rDFEm1MneRBC",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        800,
+        1680
+      ],
+      "id": "305350fb-60ff-41da-af00-2417373def3e",
+      "name": "Embeddings OpenAI3",
+      "credentials": {
+        "openAiApi": {
+          "id": "828ccULkcpVR0yKb",
+          "name": "doc_assistant"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "splitPages": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        960,
+        1640
+      ],
+      "id": "0ce73cef-43d5-49ee-86da-20b4a6927d86",
+      "name": "Default Data Loader2"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 10,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1060,
+        1860
+      ],
+      "id": "f0965358-40e7-4d74-bde4-e5a9b7da9b2f",
+      "name": "Recursive Character Text Splitter2"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "=file_1",
+        "options": {
+          "joinPages": true
+        }
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        520,
+        1460
+      ],
+      "id": "a3cb1a6e-fd3f-4e99-b73f-c286e991972a",
+      "name": "Extract from File1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "tableId": "documents",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "content",
+              "fieldValue": "={{ $json.pageContent }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        1460
+      ],
+      "id": "a63b3c52-9379-477c-92ff-5fc94bd8055f",
+      "name": "Supabase1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "mW82rDFEm1MneRBC",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Created": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Updated": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access_token_refresher": {
+      "main": [
+        [
+          {
+            "node": "Zoho WorkDrive Folder Info",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Zoho WorkDrive Folder ZIP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Access_token_refresher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zoho WorkDrive Folder Info": {
+      "main": [
+        []
+      ]
+    },
+    "Zoho WorkDrive Folder ZIP": {
+      "main": [
+        [
+          {
+            "node": "Download Zip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Zip": {
+      "main": [
+        [
+          {
+            "node": "Compression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression": {
+      "main": [
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI3": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader2": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter2": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader2",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store2": {
+      "main": [
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "any",
+    "errorWorkflow": "UdhbowOJUgEsKfeC"
+  },
+  "versionId": "4a910c85-14d4-40a9-a150-40c5fbf061bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dcbb0c8941f89a8aab62e7ff11473fe30ebf03c085d0883c7fe3252ce41886b2"
+  },
+  "id": "UdhbowOJUgEsKfeC",
+  "tags": [
+    {
+      "createdAt": "2025-02-13T16:13:19.233Z",
+      "updatedAt": "2025-02-13T16:13:19.233Z",
+      "id": "AHzkpikgRECDUVtI",
+      "name": "GDrive test"
+    }
+  ]
+}

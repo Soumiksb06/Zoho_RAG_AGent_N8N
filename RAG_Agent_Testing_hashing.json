@@ -1,0 +1,1663 @@
+{
+  "name": "RAG Agent Testing",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -780,
+        3960
+      ],
+      "id": "89350e18-4f47-458f-a53b-14b5390e225a",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f8b05493-5657-47af-8026-78a44649724e",
+      "name": "When chat message received",
+      "webhookId": "a813d863-908b-45f9-94eb-a918c07b4749"
+    },
+    {
+      "parameters": {
+        "name": "Documents",
+        "description": "Data to answer based on the stored documents. You should always use this data no matter what the query is.",
+        "topK": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        500,
+        180
+      ],
+      "id": "129547e3-1aa9-43a3-bd8d-7c601f880727",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Process all binary files and output them as individual items\nreturn $input.all().flatMap(item =>\n  Object.keys(item.binary || {}).map(key => ({\n    binary: {\n      data: item.binary[key] // Assign the binary file data\n    },\n    json: {\n      fileName: item.binary[key].fileName || 'unknown',          // 📁 File Name\n      mimeType: item.binary[key].mimeType || 'unknown',          // 🏷️ Mime Type\n      fileExtension: item.binary[key].fileExtension || 'unknown',// 📂 File Extension\n      directory: item.binary[key].directory || 'root'            // 📁 Directory Info\n    }\n  }))\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        4240
+      ],
+      "id": "2a2e0aad-6dfb-4bc9-80f8-908f88112a93",
+      "name": "Split into multiple file items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b4eae290-6e26-4796-982c-4d960b3394a7",
+              "leftValue": "={{ $binary.data.fileSize }}",
+              "rightValue": "0 B",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1260,
+        4240
+      ],
+      "id": "fe055743-c9ca-4dd9-a285-931245a88435",
+      "name": "Check if file empty"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7f45737-1d7e-47e4-9e95-069c3f1a8a3d",
+              "leftValue": "={{ $('Get updated files only').item.binary.data.mimeType }}\n",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        540,
+        4360
+      ],
+      "id": "0c009173-8055-4d15-b732-cad65366f66a",
+      "name": "Check if XLSX file",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1320,
+        3960
+      ],
+      "id": "6084d9fe-6f10-4e90-beb2-6a580a519ebb",
+      "name": "Loop Over XLSX Items"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        920,
+        4480
+      ],
+      "id": "a9417cfe-52fb-48e7-8a07-45b35e089dfb",
+      "name": "Loop Over Other than XLSX Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1360,
+        4740
+      ],
+      "id": "6eb0887f-36cd-47ac-86cf-e0bbad9dabb7",
+      "name": "Files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "fileName",
+                "value": "={{ $('Get updated files only').item.json.filename }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        4740
+      ],
+      "id": "459b9a83-c83f-4111-a513-943207de024e",
+      "name": "Files Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        4960
+      ],
+      "id": "939f1d06-0938-494e-b1a9-24b2d8aa1d16",
+      "name": "Files Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Role & Guidelines\nYou are an intelligent assistant connected to a Supabase vector store database containing various resource documents. Your responses must strictly follow these guidelines:\n\nScope of Answers\nExclusive Data Source: Provide answers strictly based on the Supabase vector store.\nUnavailable Information:\nIf the requested topic, company, or data is not found in the database, clearly state that no information is available.\nDo not generate speculative or external data.\nSupported Topics:\nWhen asked “What can I ask you about?” or similar questions:\nSearch the entire document database and return a list of all available topics covered in the documents.\nExamples of topics to look for include:\nCompanies & Corporations → (e.g., Tata Consultancy Services (TCS), Infosys, HCL, Persistent Systems, Zomato, BMW, Tata Steel, HSBC, Barclays, JPMorgan Chase, Wells Fargo, etc.)\nBanking & Financial Institutions → (e.g., Bank balance sheets, closures, mergers, and regulatory actions.)\nStock Market & Investments → (e.g., Financial performance, balance sheets, stock data, and trends.)\nEconomic Reports & Trends → (e.g., Bank of England balance sheets, institutional financial health, macroeconomic indicators.)\nIf no clear topics are found, list general categories (e.g., financial institutions, stock markets, corporate performance).\nIf no relevant information is available in the database, explicitly inform the user.\nUnderstanding & Search Process\nComprehension: Fully understand the user’s query before responding.\nComprehensive Search: Perform a deep search across all documents in the Supabase vector store for relevant topics.\nVerification: Ensure retrieved topics exist in the dataset before listing them.\nAnswer Generation\nAccuracy: Provide precise and verified responses based solely on available data.\nCitation: Reference document sources where applicable.\nStep-by-Step Reasoning: Break down complex queries into logical steps and validate each step.\nNo Chat Memory: Do not incorporate information from past conversations.\nHandling Topic-Related Queries\nIf topics are in the database → Provide a structured list of available topics.\nIf topics are NOT found → Respond:\n\"I couldn't find specific topics in the available documents, but I can help with general inquiries related to companies, financial data, and economic reports. Let me know what you're looking for!\"\nStrict No-Hallucination Policy\nNo Assumptions: Do not fabricate or assume any information.\nNo External Data: Do not pull from outside sources beyond the database.\nTable Formatting Requirements\nConsistent Data Structure: Use a fixed-width table format for all tabular responses.\nTopic Lists & Comparisons:\nIf listing topics, present them in a structured format with all available categories.\nIf comparing data, use a table with bold headers.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        280,
+        0
+      ],
+      "id": "6873d507-034b-4898-8f9f-4685da4f6af0",
+      "name": "AI Agent for QnA from Document"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        180
+      ],
+      "id": "15abc4f2-68b7-4e52-bbbc-3a4d99890e7e",
+      "name": "Postgres Chat History Memory",
+      "credentials": {
+        "postgres": {
+          "id": "Qhq75MQSRUm9GgHX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        460,
+        340
+      ],
+      "id": "09bc8895-d933-4076-9c41-a5aa2159e35f",
+      "name": "Documents Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1080,
+        340
+      ],
+      "id": "ce0b3327-2113-4cc9-8f9d-188694a1ef70",
+      "name": "OpenAI Chat Model for Documents retrieval",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        500
+      ],
+      "id": "6676094a-60bf-44eb-837c-b6bea378560a",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-thinking-exp",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        820,
+        340
+      ],
+      "id": "1c153bf1-82fa-4a61-b93d-65b1934eeded",
+      "name": "Google Gemini Chat Model for Documents Retrieval",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        180
+      ],
+      "id": "6004a5d8-ca20-4d79-bf5e-bbd62789c0df",
+      "name": "Google Gemini Chat Model for QnA and Tool Calling",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        3960
+      ],
+      "id": "fe207969-79dd-4fef-bcd8-fda737014014",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        4180
+      ],
+      "id": "9d5a8534-e49b-427c-a338-b67a2dd0830d",
+      "name": "XLSX Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1860,
+        4200
+      ],
+      "id": "da360083-a652-447c-984e-6f1ab63286c2",
+      "name": "XLSX files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        4340
+      ],
+      "id": "b41eed0d-a61a-4790-8a28-a55046a30d71",
+      "name": "XLSX Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "formTitle": "RAG files",
+        "formDescription": "This form takes the files you want to add in the RAG system.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload files",
+              "fieldType": "file",
+              "acceptFileTypes": ".docx, .xlsx, .csv, .pdf, .txt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -2080,
+        4240
+      ],
+      "id": "153f15af-25e4-4df9-8282-e72775546564",
+      "name": "On form submission",
+      "webhookId": "0fb9e79f-3020-4f9e-83b3-702dcb4fe507"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        140,
+        180
+      ],
+      "id": "20af727b-fda3-4585-bab2-ff71528694d2",
+      "name": "OpenAI Chat Model for QnA and Tool Calling",
+      "credentials": {
+        "openAiApi": {
+          "id": "unaHT3AsymDc0V64",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://nqhxcjxhzqodmlvinahd.supabase.co/rest/v1/documents?id=gt.0",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHhjanhoenFvZG1sdmluYWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5ODI4MDcsImV4cCI6MjA1NjU1ODgwN30.4GOtUfJ1OU2Gpp0cew9QLHEt2FQnZd4x_QnFd4O5yRo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1240,
+        680
+      ],
+      "id": "0e08f044-6c3a-4d66-a052-51664e120063",
+      "name": "Delete node",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        4480
+      ],
+      "id": "6a0fb945-5ea2-4e08-9413-b45fe849c3b2",
+      "name": "Enter non XLSX files to Supabase Vector Store",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "content",
+              "condition": "fullText",
+              "searchFunction": "plfts",
+              "keyValue": "={{$json[\"content\"]}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1260,
+        980
+      ],
+      "id": "3201fa9e-8fb0-45f1-8346-9561eab8ffc6",
+      "name": "delete existing",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        700,
+        940
+      ],
+      "id": "5eefb351-4f85-4039-ba17-7233864dd50f",
+      "name": "No Operation, do nothing1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Process all binary files and output them as individual items\nreturn $input.all().flatMap(item =>\n  Object.keys(item.binary || {}).map(key => ({\n    binary: {\n      data: item.binary[key] // Assign the binary file data\n    },\n    json: {\n      fileName: item.binary[key].fileName || 'unknown',          // 📁 File Name\n      mimeType: item.binary[key].mimeType || 'unknown',          // 🏷️ Mime Type\n      fileExtension: item.binary[key].fileExtension || 'unknown',// 📂 File Extension\n      directory: item.binary[key].directory || 'root'            // 📁 Directory Info\n    }\n  }))\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        1160
+      ],
+      "id": "606628e9-c732-4c6f-8a05-c924d0970028",
+      "name": "Split into multiple file items1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b4eae290-6e26-4796-982c-4d960b3394a7",
+              "leftValue": "={{ $binary.data.fileSize }}",
+              "rightValue": "0 B",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        400,
+        1160
+      ],
+      "id": "8c1997eb-1c82-4ab5-9748-9e4842330c4f",
+      "name": "Check if file empty1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7f45737-1d7e-47e4-9e95-069c3f1a8a3d",
+              "leftValue": "={{ $binary.data.mimeType}}",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        700,
+        1240
+      ],
+      "id": "272b3cf0-e098-4f5e-a4e0-6948db76aa98",
+      "name": "Check if XLSX file1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1140,
+        920
+      ],
+      "id": "756f3d71-1d33-4f6e-bf0b-d69d9e22ad28",
+      "name": "Loop Over XLSX Items1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        920,
+        1480
+      ],
+      "id": "dda1b690-1227-4174-acde-d6fa0e84cda9",
+      "name": "Loop Over Other than XLSX Items1",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1580,
+        1480
+      ],
+      "id": "6490417b-35dd-41fb-adc9-817514234a9f",
+      "name": "Enter non XLSX files to Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1400,
+        1740
+      ],
+      "id": "48e73095-5070-4383-a057-b1709f8d6002",
+      "name": "Files Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        1720
+      ],
+      "id": "984f2d87-bbd7-4100-8254-af7bc1c7b331",
+      "name": "Files Data Loader1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        1900
+      ],
+      "id": "8e97fdb0-d572-42bb-b2fc-effeb6b290d5",
+      "name": "Files Recursive Character Text Splitter1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        920
+      ],
+      "id": "815e9839-ba6c-4289-80d9-b4f62e66214b",
+      "name": "Extract from File1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        1160
+      ],
+      "id": "17f615c5-53ac-451f-a9d4-2f83897cb04d",
+      "name": "XLSX Data Loader1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1660,
+        920
+      ],
+      "id": "5de9fa6b-48dc-464f-b99e-bdbab909dbd8",
+      "name": "Enter XLSXs to Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1680,
+        1160
+      ],
+      "id": "6db35e25-9aa2-4de5-9721-f191c549a007",
+      "name": "XLSX files Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1880,
+        1320
+      ],
+      "id": "71f54da2-2bc1-4d7b-be76-71a8cf877be5",
+      "name": "XLSX Recursive Character Text Splitter1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "formTitle": "RAG files",
+        "formDescription": "This form takes the files you want to add in the RAG system.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload files",
+              "fieldType": "file",
+              "acceptFileTypes": ".docx, .xlsx, .csv, .pdf, .txt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -700,
+        1160
+      ],
+      "id": "9f3eba04-dc0e-4fa2-92e9-23d40906112b",
+      "name": "On form submission1",
+      "webhookId": "f8bc17e3-7387-4f7e-982d-dafa9d9950df",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86d51d52-6670-4ccd-9e8e-d191ebbb3e0d",
+              "name": "file_name",
+              "value": "={{ $json.file_name }}",
+              "type": "string"
+            },
+            {
+              "id": "26283c1c-778c-479d-9f98-4ecf6ff0a623",
+              "name": "file_hash",
+              "value": "={{ $json.file_hash }}",
+              "type": "string"
+            },
+            {
+              "id": "785b6e6e-3eab-40ef-99da-874c193642ac",
+              "name": "binary",
+              "value": "={{$('Compute File Hash').binary.data}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -500,
+        3640
+      ],
+      "id": "320eb0b7-be7f-4251-9efe-386804dcb3c4",
+      "name": "Set file hash",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\n\nreturn $input.all().map(item => {\n    // Ensure binary data exists\n    if (!item.binary || typeof item.binary !== 'object') {\n        throw new Error(\"Binary data is missing or incorrectly formatted\");\n    }\n\n    const binaryKeys = Object.keys(item.binary);\n    if (binaryKeys.length === 0) {\n        throw new Error(\"No binary data found in input.\");\n    }\n\n    return binaryKeys.map(key => {\n        const binaryData = item.binary[key];\n\n        // Use the fileName if provided, otherwise use the key\n        const fileName = binaryData.fileName || key;\n\n        // Compute SHA-256 hash based on the file name string\n        const hash = crypto.createHash('sha256').update(fileName).digest('hex');\n\n        return {\n            json: {\n                file_name: fileName,\n                file_hash: hash,\n            },\n            binary: { [key]: binaryData }\n        };\n    });\n}).flat();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        3640
+      ],
+      "id": "94f8155f-646a-4364-88ad-f63e05bcaed3",
+      "name": "Compute File Hash",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "type": "SHA256",
+        "binaryData": true,
+        "dataPropertyName": "cal_file_hash"
+      },
+      "type": "n8n-nodes-base.crypto",
+      "typeVersion": 1,
+      "position": [
+        -780,
+        4440
+      ],
+      "id": "4153a992-3501-466a-9e44-63413a2ad164",
+      "name": "Calculate hash",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        3960
+      ],
+      "id": "3543b582-ac8b-4f74-9534-9f369c6764ff",
+      "name": "Enter XLSXs to Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "hashes",
+        "returnAll": true,
+        "matchType": "allFilters"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -540,
+        4440
+      ],
+      "id": "8fc7a189-2617-4806-b335-14cbf7406239",
+      "name": "Get existing hashes",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return (() => {\n    // Extract all filenames & hashes from \"Calculate hash\" node\n    const calculatedFiles = $('Calculate hash').all().map(item => ({\n        filename: item.json.fileName, // Extract filename\n        hash: item.json.cal_file_hash // Extract hash\n    }));\n\n    // Extract existing filenames & hashes from \"Get existing hashes\" node\n    const existingFiles = ($('Get existing hashes').items || []).map(item => ({\n        filename: item.json.file_name || '', // Extract filename\n        hash: item.json.file_hash || '' // Extract hash\n    }));\n\n    // Find files where the filename exists in existingFiles, but the hash is different\n    const uniqueFiles = calculatedFiles.filter(file => \n        !existingFiles.some(existing => existing.filename === file.filename && existing.hash === file.hash)\n    );\n\n    // Convert to array of objects (Required by n8n)\n    return uniqueFiles.map(file => ({ json: { filename: file.filename, new_hash: file.hash } }));\n})();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        4440
+      ],
+      "id": "9716914e-5e70-4c12-8a52-972b63a1d4f7",
+      "name": "Compare files",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "hashes",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "fileName",
+              "condition": "eq",
+              "keyValue": "={{ $json.filename }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "fileName",
+              "fieldValue": "={{ $json.filename }}"
+            },
+            {
+              "fieldId": "file_hash",
+              "fieldValue": "={{ $json.new_hash }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        4440
+      ],
+      "id": "49618c6d-7b60-4568-8978-7cba9cf27487",
+      "name": "Update hashes to hash table",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return (() => {\n    // Get files that need to be added to the vector store\n    const newFiles = $input.all().map(item => ({\n        filename: item.json.filename,\n        hash: item.json.new_hash\n    }));\n\n    // Get binaries from \"Check if file empty\" node\n    const fileBinaries = $('Check if file empty').all();\n\n    // Match each file with its binary\n    const filesWithBinaries = newFiles.map(file => {\n        const binaryData = fileBinaries.find(bin => bin.json.fileName === file.filename);\n        return binaryData ? { json: file, binary: binaryData.binary } : null;\n    }).filter(file => file !== null); // Remove unmatched files\n\n    return filesWithBinaries;\n})();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        4660
+      ],
+      "id": "f0a43304-5230-4350-abbe-497da876fcb5",
+      "name": "Get updated files only"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ead89fd-f792-453f-8f95-3a862e7f8d1d",
+              "name": "fileName",
+              "value": "={{ $json.metadata.fileName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1900,
+        4480
+      ],
+      "id": "f7dce41b-5b2f-45e0-b5b1-74ffc5983488",
+      "name": "Extract filename",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "ilike",
+              "keyValue": "="
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2180,
+        4500
+      ],
+      "id": "e639a45c-99d9-484c-968a-2896d34bf897",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into multiple file items": {
+      "main": [
+        [
+          {
+            "node": "Check if file empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if file empty": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Calculate hash",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if XLSX file": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Other than XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Files Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat History Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documents Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for Documents retrieval": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Documents Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "XLSX Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Split into multiple file items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model for Documents Retrieval": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model for QnA and Tool Calling": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "OpenAI Chat Model for QnA and Tool Calling": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter non XLSX files to Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Extract filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into multiple file items1": {
+      "main": [
+        [
+          {
+            "node": "Check if file empty1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if file empty1": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check if XLSX file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if XLSX file1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Other than XLSX Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over XLSX Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract from File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Other than XLSX Items1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter non XLSX files to Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Other than XLSX Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Files Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File1": {
+      "main": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter XLSXs to Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX files Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "XLSX Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission1": {
+      "main": [
+        [
+          {
+            "node": "Split into multiple file items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute File Hash": {
+      "main": [
+        []
+      ]
+    },
+    "Calculate hash": {
+      "main": [
+        [
+          {
+            "node": "Get existing hashes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter XLSXs to Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get existing hashes": {
+      "main": [
+        [
+          {
+            "node": "Compare files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare files": {
+      "main": [
+        [
+          {
+            "node": "Get updated files only",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update hashes to hash table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update hashes to hash table": {
+      "main": [
+        []
+      ]
+    },
+    "Get updated files only": {
+      "main": [
+        [
+          {
+            "node": "Check if XLSX file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract filename": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7a63efca-42dc-42b3-bb86-387a3e0f6393",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54909ce6602dce9d23999709e4b5488686a5e85a8aa5362e32121a16e4d370b0"
+  },
+  "id": "Id2DGf8nKjcZlijO",
+  "tags": []
+}

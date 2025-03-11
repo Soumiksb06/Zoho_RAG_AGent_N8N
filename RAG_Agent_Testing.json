@@ -1,0 +1,857 @@
+{
+  "name": "RAG Agent Testing",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        580,
+        960
+      ],
+      "id": "89350e18-4f47-458f-a53b-14b5390e225a",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f8b05493-5657-47af-8026-78a44649724e",
+      "name": "When chat message received",
+      "webhookId": "a813d863-908b-45f9-94eb-a918c07b4749"
+    },
+    {
+      "parameters": {
+        "name": "Documents",
+        "description": "Data to answer based on the stored documents. You should always use this data no matter what the query is.",
+        "topK": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        500,
+        180
+      ],
+      "id": "129547e3-1aa9-43a3-bd8d-7c601f880727",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Process all binary files and output them as individual items\nreturn $input.all().flatMap(item =>\n  Object.keys(item.binary || {}).map(key => ({\n    binary: {\n      data: item.binary[key] // Assign the binary file data\n    },\n    json: {\n      fileName: item.binary[key].fileName || 'unknown',          // 📁 File Name\n      mimeType: item.binary[key].mimeType || 'unknown',          // 🏷️ Mime Type\n      fileExtension: item.binary[key].fileExtension || 'unknown',// 📂 File Extension\n      directory: item.binary[key].directory || 'root'            // 📁 Directory Info\n    }\n  }))\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -20,
+        1180
+      ],
+      "id": "2a2e0aad-6dfb-4bc9-80f8-908f88112a93",
+      "name": "Split into multiple file items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b4eae290-6e26-4796-982c-4d960b3394a7",
+              "leftValue": "={{ $binary.data.fileSize }}",
+              "rightValue": "0 B",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        1180
+      ],
+      "id": "fe055743-c9ca-4dd9-a285-931245a88435",
+      "name": "Check if file empty"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7f45737-1d7e-47e4-9e95-069c3f1a8a3d",
+              "leftValue": "={{ $binary.data.mimeType}}",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        580,
+        1260
+      ],
+      "id": "0c009173-8055-4d15-b732-cad65366f66a",
+      "name": "Check if XLSX file"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1020,
+        940
+      ],
+      "id": "6084d9fe-6f10-4e90-beb2-6a580a519ebb",
+      "name": "Loop Over XLSX Items"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        800,
+        1500
+      ],
+      "id": "a9417cfe-52fb-48e7-8a07-45b35e089dfb",
+      "name": "Loop Over Other than XLSX Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1460,
+        1500
+      ],
+      "id": "b70c3d92-b6bf-4d47-8b9e-184cdd33f391",
+      "name": "Enter non XLSX files to Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        1760
+      ],
+      "id": "6eb0887f-36cd-47ac-86cf-e0bbad9dabb7",
+      "name": "Files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1480,
+        1740
+      ],
+      "id": "459b9a83-c83f-4111-a513-943207de024e",
+      "name": "Files Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        1920
+      ],
+      "id": "939f1d06-0938-494e-b1a9-24b2d8aa1d16",
+      "name": "Files Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Role & Guidelines\nYou are an intelligent assistant connected to a Supabase vector store database containing various resource documents. Your responses must strictly follow these guidelines:\n\nScope of Answers\nExclusive Data Source: Provide answers strictly based on the Supabase vector store.\nUnavailable Information:\nIf the requested topic, company, or data is not found in the database, clearly state that no information is available.\nDo not generate speculative or external data.\nSupported Topics:\nWhen asked “What can I ask you about?” or similar questions:\nSearch the entire document database and return a list of all available topics covered in the documents.\nExamples of topics to look for include:\nCompanies & Corporations → (e.g., Tata Consultancy Services (TCS), Infosys, HCL, Persistent Systems, Zomato, BMW, Tata Steel, HSBC, Barclays, JPMorgan Chase, Wells Fargo, etc.)\nBanking & Financial Institutions → (e.g., Bank balance sheets, closures, mergers, and regulatory actions.)\nStock Market & Investments → (e.g., Financial performance, balance sheets, stock data, and trends.)\nEconomic Reports & Trends → (e.g., Bank of England balance sheets, institutional financial health, macroeconomic indicators.)\nIf no clear topics are found, list general categories (e.g., financial institutions, stock markets, corporate performance).\nIf no relevant information is available in the database, explicitly inform the user.\nUnderstanding & Search Process\nComprehension: Fully understand the user’s query before responding.\nComprehensive Search: Perform a deep search across all documents in the Supabase vector store for relevant topics.\nVerification: Ensure retrieved topics exist in the dataset before listing them.\nAnswer Generation\nAccuracy: Provide precise and verified responses based solely on available data.\nCitation: Reference document sources where applicable.\nStep-by-Step Reasoning: Break down complex queries into logical steps and validate each step.\nNo Chat Memory: Do not incorporate information from past conversations.\nHandling Topic-Related Queries\nIf topics are in the database → Provide a structured list of available topics.\nIf topics are NOT found → Respond:\n\"I couldn't find specific topics in the available documents, but I can help with general inquiries related to companies, financial data, and economic reports. Let me know what you're looking for!\"\nStrict No-Hallucination Policy\nNo Assumptions: Do not fabricate or assume any information.\nNo External Data: Do not pull from outside sources beyond the database.\nTable Formatting Requirements\nConsistent Data Structure: Use a fixed-width table format for all tabular responses.\nTopic Lists & Comparisons:\nIf listing topics, present them in a structured format with all available categories.\nIf comparing data, use a table with bold headers.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        280,
+        0
+      ],
+      "id": "6873d507-034b-4898-8f9f-4685da4f6af0",
+      "name": "AI Agent for QnA from Document"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        180
+      ],
+      "id": "15abc4f2-68b7-4e52-bbbc-3a4d99890e7e",
+      "name": "Postgres Chat History Memory",
+      "credentials": {
+        "postgres": {
+          "id": "Qhq75MQSRUm9GgHX",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        460,
+        340
+      ],
+      "id": "09bc8895-d933-4076-9c41-a5aa2159e35f",
+      "name": "Documents Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        280
+      ],
+      "id": "ce0b3327-2113-4cc9-8f9d-188694a1ef70",
+      "name": "OpenAI Chat Model for Documents retrieval",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        520,
+        500
+      ],
+      "id": "6676094a-60bf-44eb-837c-b6bea378560a",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash-thinking-exp",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        820,
+        340
+      ],
+      "id": "1c153bf1-82fa-4a61-b93d-65b1934eeded",
+      "name": "Google Gemini Chat Model for Documents Retrieval",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        180
+      ],
+      "id": "6004a5d8-ca20-4d79-bf5e-bbd62789c0df",
+      "name": "Google Gemini Chat Model for QnA and Tool Calling",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "e441VEhxq1oRsMM3",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1300,
+        940
+      ],
+      "id": "fe207969-79dd-4fef-bcd8-fda737014014",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        1180
+      ],
+      "id": "9d5a8534-e49b-427c-a338-b67a2dd0830d",
+      "name": "XLSX Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {
+          "queryName": "match_documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        940
+      ],
+      "id": "3543b582-ac8b-4f74-9534-9f369c6764ff",
+      "name": "Enter XLSXs to Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1560,
+        1180
+      ],
+      "id": "da360083-a652-447c-984e-6f1ab63286c2",
+      "name": "XLSX files Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        1340
+      ],
+      "id": "b41eed0d-a61a-4790-8a28-a55046a30d71",
+      "name": "XLSX Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "formTitle": "RAG files",
+        "formDescription": "This form takes the files you want to add in the RAG system.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload files",
+              "fieldType": "file",
+              "acceptFileTypes": ".docx, .xlsx, .csv, .pdf, .txt",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -660,
+        1180
+      ],
+      "id": "153f15af-25e4-4df9-8282-e72775546564",
+      "name": "On form submission",
+      "webhookId": "0fb9e79f-3020-4f9e-83b3-702dcb4fe507"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        140,
+        180
+      ],
+      "id": "20af727b-fda3-4585-bab2-ff71528694d2",
+      "name": "OpenAI Chat Model for QnA and Tool Calling",
+      "credentials": {
+        "openAiApi": {
+          "id": "unaHT3AsymDc0V64",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://nqhxcjxhzqodmlvinahd.supabase.co/rest/v1/documents?id=gt.0",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xaHhjanhoenFvZG1sdmluYWhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5ODI4MDcsImV4cCI6MjA1NjU1ODgwN30.4GOtUfJ1OU2Gpp0cew9QLHEt2FQnZd4x_QnFd4O5yRo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1240,
+        680
+      ],
+      "id": "0e08f044-6c3a-4d66-a052-51664e120063",
+      "name": "Delete node",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "content",
+              "condition": "fullText",
+              "searchFunction": "plfts",
+              "keyValue": "={{$json[\"content\"]}}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1180,
+        1360
+      ],
+      "id": "5236905b-e82f-4a4e-a5d7-5f695b5babd1",
+      "name": "delete existing",
+      "credentials": {
+        "supabaseApi": {
+          "id": "8T4ZssngJj4zgaSj",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into multiple file items": {
+      "main": [
+        [
+          {
+            "node": "Check if file empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if file empty": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check if XLSX file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if XLSX file": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Other than XLSX Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter non XLSX files to Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Other than XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter non XLSX files to Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Files Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat History Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Documents Supabase Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model for Documents retrieval": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Documents Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enter XLSXs to Supabase Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over XLSX Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX files Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Enter XLSXs to Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "XLSX Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "XLSX Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Split into multiple file items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model for Documents Retrieval": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model for QnA and Tool Calling": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "OpenAI Chat Model for QnA and Tool Calling": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent for QnA from Document",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "bc590b6b-3321-44bc-b741-79cd2720ca18",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54909ce6602dce9d23999709e4b5488686a5e85a8aa5362e32121a16e4d370b0"
+  },
+  "id": "Id2DGf8nKjcZlijO",
+  "tags": []
+}

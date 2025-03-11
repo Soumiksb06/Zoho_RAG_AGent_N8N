@@ -1,0 +1,1008 @@
+{
+  "name": "Pinecone test",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $json.download_link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cookie",
+              "value": "wms-tkp-token=60037695728-c9c4fce6-fa9f09462b36c647786ded70cd98ead1; CT_CSRF_TOKEN=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_9ca8afda3c=67cedda465839ebb400f534ce758c510; zpcc=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; zalb_13e18a66b2=3ef4df315380ed89ad7f51333f5a80eb; _zcsr_tmp=9e8022b56530694650ba2b33d22d17eaa0a59e7926924586080e2febda5c4c66c87c7a2c20e872f1cff7ddb27003f7801faa2cad1298e7b4ac5d9c674da7dfe7; _iambdt=debda297dde58d58f0fce91527ef9f5e802a8be7d46ea08b382f374eb07482013adc2189b9ba4d3bdb3e41d90af67a914bdc3988df73cfadafc42dc016216b59; _iamadt=9a436cf2b24a4f0c414bfdafa4f335b7a4a2bc91ec22de37626ab4c4e0cc766d31cb3fba099d1fd4e0206ccbdcc90a56"
+            },
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        1080
+      ],
+      "id": "d97b0d3e-ec57-4d7a-95a1-b91a40ad04f2",
+      "name": "Download Zip of All Files1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://zoho-access-token-refresher-api.onrender.com/refresh-token",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "client_id",
+              "value": "1000.F0ZVRFPFZLBJ5F4OUYNT16XZXSB8RS"
+            },
+            {
+              "name": "client_secret",
+              "value": "574f4ca5a62c1353e5196d5029c2c172a312f73495"
+            },
+            {
+              "name": "token",
+              "value": "1000.031da72bed142c36290069922c366d66.58a466ced05515832870434108b208df"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        1080
+      ],
+      "id": "bed0d6ff-5f60-47a9-9966-848857c6023d",
+      "name": "Access_token-refresher1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        980,
+        1080
+      ],
+      "id": "4f32ea7b-c14b-4a61-997e-2b4f064d7fab",
+      "name": "Compression1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Process all binary files and output them as individual items\nreturn $input.all().flatMap(item =>\n  Object.keys(item.binary || {}).map(key => ({\n    binary: {\n      data: item.binary[key] // Assign the binary file data\n    },\n    json: {\n      fileName: item.binary[key].fileName || 'unknown',          // 📁 File Name\n      mimeType: item.binary[key].mimeType || 'unknown',          // 🏷️ Mime Type\n      fileExtension: item.binary[key].fileExtension || 'unknown',// 📂 File Extension\n      directory: item.binary[key].directory || 'root'            // 📁 Directory Info\n    }\n  }))\n);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        1080
+      ],
+      "id": "5ff4c374-91df-4ec4-b485-565437c8a2b6",
+      "name": "Split into multiple file items1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2020,
+        1200
+      ],
+      "id": "b3752d27-8d55-44a1-bfb1-19d01d67cf0b",
+      "name": "Loop Over Items",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "triton",
+          "mode": "list",
+          "cachedResultName": "triton"
+        },
+        "options": {
+          "pineconeNamespace": "Documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        1200
+      ],
+      "id": "82c58d51-5386-496d-96fe-d108b34b7ead",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "mgUrVlT5XFpkBT8R",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2240,
+        1460
+      ],
+      "id": "73099ddf-7e7d-4218-8068-32cd6deaba9d",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2380,
+        1460
+      ],
+      "id": "5232c528-3954-43f7-996c-3f13669671b8",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2460,
+        1660
+      ],
+      "id": "dc1e5582-8f7f-4614-be94-b0d74d09f301",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b4eae290-6e26-4796-982c-4d960b3394a7",
+              "leftValue": "={{ $binary.data.fileSize }}",
+              "rightValue": "0 B",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1420,
+        1080
+      ],
+      "id": "79e0041b-ee2b-428c-a60a-5c6c39fe9fbc",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1700,
+        860
+      ],
+      "id": "6ac89343-60a0-4e49-b7a7-4c438eba2970",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a7f45737-1d7e-47e4-9e95-069c3f1a8a3d",
+              "leftValue": "={{ $binary.data.mimeType}}",
+              "rightValue": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1700,
+        1160
+      ],
+      "id": "2e3bcc73-3a26-438e-92cc-96365d588d73",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        760
+      ],
+      "id": "75ec115d-cc1e-480f-a494-5d6fd3fb0238",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2060,
+        760
+      ],
+      "id": "570a7e81-0767-48ac-8566-4283ff91d35e",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -220,
+        0
+      ],
+      "id": "2f03b29c-3ed2-4f0f-91db-6923f2bb6d54",
+      "name": "When chat message received",
+      "webhookId": "4961892f-38c7-40c1-b55d-90b54d345d0f"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "ALWAYS REFER TO TOOLS AND DOCUMENTS BEFORE ANSWERING!!!\n\nYou are a document retrieval assistant. Use vector search to reference the provided documents when answering questions—no extra details or guesses.\n\nDocument-Referenced Answers: Base your responses solely on the content in the documents.\nGreetings: If the user greets you, respond with a friendly greeting.\nOut-of-Scope: If a question isn’t covered by the documents, prompt the user for a relevant question.\nApproach: Remain skeptical and forward-thinking when evaluating the document material."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        60,
+        0
+      ],
+      "id": "61a08424-c3af-4163-9565-6f68a63cf306",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {
+          "maxTokens": 200
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -40,
+        200
+      ],
+      "id": "aa321b2e-0033-45d7-b81d-56ca255263d8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Documents",
+        "description": "Useful whenever you need information based on the stored documents. You should always use this tool for queries like:\n\n“Who is X?”\n“What did Y do?”\n“What is Z here?”\n“What are the main topics covered in the documents?”\n“Which document explains [specific topic] in detail?”\n\nand any other query that matches any documents!"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1,
+      "position": [
+        300,
+        220
+      ],
+      "id": "57f33e2b-14a7-4dd4-b1d5-25aef01b3264",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "triton",
+          "mode": "list",
+          "cachedResultName": "triton"
+        },
+        "options": {
+          "pineconeNamespace": "Documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        220,
+        460
+      ],
+      "id": "404c9c74-c9fa-4740-bbbc-765c555f15fc",
+      "name": "Pinecone Vector Store2",
+      "credentials": {
+        "pineconeApi": {
+          "id": "mgUrVlT5XFpkBT8R",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        300,
+        620
+      ],
+      "id": "bd2aca87-73d6-4baf-b934-536ec6645eb8",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        620,
+        460
+      ],
+      "id": "91b0a052-22ef-40d7-a9ad-18b61a7e98ba",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2400,
+        500
+      ],
+      "id": "2cc16e36-74a6-4fa5-8dee-b425ac83c137",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2720,
+        720
+      ],
+      "id": "9f97cf15-e03a-4e03-b082-1fc980efe9a1",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "70mdnyT0Y3n9r6Lg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "csvLoader",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        720
+      ],
+      "id": "6ced97e8-863b-466b-b595-cfba831dc1f6",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2960,
+        900
+      ],
+      "id": "c4757b76-fd5f-4e25-bf90-e2b4c596afae",
+      "name": "Recursive Character Text Splitter1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a6f8aefc-37ac-43d4-9cf5-1db613c5efe8",
+              "leftValue": "={{ $json.download_link }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        520,
+        1300
+      ],
+      "id": "c39b4dff-111c-4b62-bff6-b8ab6d5f6da9",
+      "name": "Check if Download Link Exists"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.zohoapis.in/workdrive/api/v1/multizip",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Zoho-oauthtoken {{ $json.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"data\": {\n    \"attributes\": {\n      \"resource_id\": \"8tlop6b767bc559b24e39857e83a98ab06607\"\n    },\n    \"type\": \"files\"\n  }\n}",
+        "options": {
+          "redirect": {
+            "redirect": {}
+          },
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        1300
+      ],
+      "id": "5ababa51-90e3-4d3e-b8b2-4f21c7b0a3a1",
+      "name": "Zip All files from a pre-selected Zoho Workdrive Folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        1520
+      ],
+      "id": "3527e8b1-9100-4ced-8e75-4ba250e68b93",
+      "name": "Wait",
+      "webhookId": "d21df842-b451-4930-9495-a43197c213e4"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "triton",
+          "mode": "list",
+          "cachedResultName": "triton"
+        },
+        "options": {
+          "pineconeNamespace": "Documents"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [
+        2760,
+        500
+      ],
+      "id": "1e0cb0ea-2133-41d3-b3ba-309037144483",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "mgUrVlT5XFpkBT8R",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 55
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -120,
+        1080
+      ],
+      "id": "16aacfd1-7144-48a4-80be-10b5d3ff43e2",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 15
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        220
+      ],
+      "id": "d10da6ad-1e31-4e92-abb3-b5cf7de6b4e3",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "Qhq75MQSRUm9GgHX",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Download Zip of All Files1": {
+      "main": [
+        [
+          {
+            "node": "Compression1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access_token-refresher1": {
+      "main": [
+        [
+          {
+            "node": "Zip All files from a pre-selected Zoho Workdrive Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compression1": {
+      "main": [
+        [
+          {
+            "node": "Split into multiple file items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into multiple file items1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store2": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Download Link Exists": {
+      "main": [
+        [
+          {
+            "node": "Download Zip of All Files1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zip All files from a pre-selected Zoho Workdrive Folder": {
+      "main": [
+        [
+          {
+            "node": "Check if Download Link Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Zip All files from a pre-selected Zoho Workdrive Folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Access_token-refresher1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "86590a6c-51c8-478b-b675-c978e3d8d619",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "54909ce6602dce9d23999709e4b5488686a5e85a8aa5362e32121a16e4d370b0"
+  },
+  "id": "IYt4hHLbzcwvMfoy",
+  "tags": []
+}
